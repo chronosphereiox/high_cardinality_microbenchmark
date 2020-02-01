@@ -16,6 +16,7 @@
 test.log
 
 # Binaries for programs and plugins
+main
 *.exe
 *.exe~
 *.dll

@@ -16,7 +16,7 @@ import (
 
 func main() {
 	var (
-		flagBlockDir = flag.String("block-dir", "", "block directory")
+		flagBlockDir = flag.String("dir", "", "prometheus block directory")
 	)
 
 	flag.Parse()
@@ -44,7 +44,7 @@ func main() {
 	}
 
 	matcher, err := labels.NewMatcher(labels.MatchRegexp,
-		"hostname", "^host_[0-9]+9$")
+		"pod", "^a.*$")
 	if err != nil {
 		logger.Fatal("could not create matcher", zap.Error(err))
 	}
@@ -53,7 +53,7 @@ func main() {
 	postings, err := tsdb.PostingsForMatchers(index, matcher)
 	took := time.Since(start)
 	if err != nil {
-		logger.Fatal("could not retrieve postings", zap.Error(err))
+		logger.Fatal("could not get postings", zap.Error(err))
 	}
 
 	n := 0

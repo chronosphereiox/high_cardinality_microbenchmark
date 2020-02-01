@@ -14,13 +14,13 @@ import (
 	"github.com/m3db/m3/src/x/instrument"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/tsdb"
+	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 var (
 	blockSize = 2 * time.Hour
-	dir       = "/tmp/prometheus"
 )
 
 func timeToPromTime(t time.Time) int64 {
@@ -71,6 +71,15 @@ TopLoop:
 						Name:  label.Name,
 						Value: label.Value,
 					})
+				}
+				sampleLabels = append(sampleLabels, labels.Label{
+					Name:  "pod",
+					Value: uuid.NewV4().String(),
+				})
+
+				if len(series.Samples) != 1 {
+					logger.Fatal("expected single sample",
+						zap.Int("samples", len(series.Samples)))
 				}
 				for _, value := range series.Samples {
 					sample := &tsdb.MetricSample{
