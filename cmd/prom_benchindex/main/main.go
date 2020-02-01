@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/tsdb"
 	"github.com/prometheus/prometheus/tsdb/chunkenc"
+	tsdbindex "github.com/prometheus/prometheus/tsdb/index"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -44,17 +45,21 @@ func main() {
 	}
 
 	matcher, err := labels.NewMatcher(labels.MatchRegexp,
-		"pod", "^a.*$")
+		"pod", "^abc.*$")
 	if err != nil {
 		logger.Fatal("could not create matcher", zap.Error(err))
 	}
 
+	var postings tsdbindex.Postings
+	thirtyDayNumBlocks := 30 * 12
 	start := time.Now()
-	postings, err := tsdb.PostingsForMatchers(index, matcher)
-	took := time.Since(start)
-	if err != nil {
-		logger.Fatal("could not get postings", zap.Error(err))
+	for i := 0; i < thirtyDayNumBlocks; i++ {
+		postings, err = tsdb.PostingsForMatchers(index, matcher)
+		if err != nil {
+			logger.Fatal("could not get postings", zap.Error(err))
+		}
 	}
+	took := time.Since(start)
 
 	n := 0
 	for postings.Next() {

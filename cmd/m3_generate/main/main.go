@@ -18,8 +18,10 @@ import (
 	"github.com/m3db/m3/src/dbnode/runtime"
 	"github.com/m3db/m3/src/m3ninx/doc"
 	"github.com/m3db/m3/src/m3ninx/index/segment/builder"
+	"github.com/m3db/m3/src/query/models"
 	"github.com/m3db/m3/src/x/ident"
 	"github.com/m3db/m3/src/x/instrument"
+	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
 
@@ -43,6 +45,10 @@ func main() {
 		return
 	}
 
+	var (
+		cardinality = *flagCardinality
+		dir         = *flagDir
+	)
 	srv := httptest.NewServer(http.DefaultServeMux)
 	logger.Info("test server with pprof", zap.String("url", srv.URL))
 
@@ -72,7 +78,7 @@ func main() {
 	}
 
 	fsOpts := fs.NewOptions().
-		SetFilePathPrefix(m3Dir).
+		SetFilePathPrefix(dir).
 		SetRuntimeOptionsManager(runtimeOptsMgr).
 		SetWriterBufferSize(cfg.Filesystem.WriteBufferSizeOrDefault()).
 		SetDataReaderBufferSize(cfg.Filesystem.DataReadBufferSizeOrDefault()).
@@ -99,18 +105,64 @@ func main() {
 		logger.Fatal("unable to create builder", zap.Error(err))
 	}
 
-	_, err = builder.Insert(doc.Document{
-		ID: []byte("foo"),
-		Fields: []doc.Field{
-			{Name: []byte("name"), Value: []byte("value")},
-		}})
-	if err != nil {
-		logger.Fatal("unable to insert document", zap.Error(err))
+	var (
+		podTag    = []byte("pod")
+		tagOpts   = models.NewTagOptions().SetIDSchemeType(models.TypeQuoted)
+		tags      = models.NewTags(0, tagOpts)
+		documents int
+	)
+TopLoop:
+	for {
+		ts, err := gen.Generate(10*time.Second, 10*time.Second, 1.0)
+		if err != nil {
+			logger.Fatal("unable to generate series", zap.Error(err))
+		}
+		for _, results := range ts {
+			for _, series := range results {
+				fields := make([]doc.Field, 0, len(series.Labels))
+				for _, label := range series.Labels {
+					fields = append(fields, doc.Field{
+						Name:  []byte(label.Name),
+						Value: []byte(label.Value),
+					})
+				}
+				fields = append(fields, doc.Field{
+					Name:  podTag,
+					Value: []byte(uuid.NewV4().String()),
+				})
+
+				tags = tags.Reset()
+				for _, field := range fields {
+					tags = tags.AddTagWithoutNormalizing(models.Tag{
+						Name:  field.Name,
+						Value: field.Value,
+					})
+				}
+				tags.Normalize()
+
+				id := tags.ID()
+				_, err = builder.Insert(doc.Document{
+					ID:     id,
+					Fields: fields,
+				})
+				if err != nil {
+					logger.Fatal("unable to insert document",
+						zap.ByteString("id", id),
+						zap.String("fields", fmt.Sprintf("%+v", fields)),
+						zap.Error(err))
+				}
+
+				documents++
+				if documents >= cardinality {
+					break TopLoop
+				}
+			}
+		}
 	}
 
 	preparedPersist, err := flush.PrepareIndex(persist.IndexPrepareOptions{
 		NamespaceMetadata: ns,
-		BlockStart:        opts.start,
+		BlockStart:        start,
 		FileSetType:       persist.FileSetFlushType,
 		Shards:            map[uint32]struct{}{0: struct{}{}},
 	})
