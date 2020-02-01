@@ -94,9 +94,9 @@ func main() {
 	}
 
 	var postings postings.List
-	thirtyDayNumBlocks := 30 * 12
+	sevenDayTwoHourNumBlocks := 7 * 12
 	start := time.Now()
-	for i := 0; i < thirtyDayNumBlocks; i++ {
+	for i := 0; i < sevenDayTwoHourNumBlocks; i++ {
 		postings, err = reader.MatchRegexp(field, regexp)
 		if err != nil {
 			logger.Fatal("could not get postings", zap.Error(err))

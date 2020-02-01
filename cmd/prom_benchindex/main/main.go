@@ -51,9 +51,9 @@ func main() {
 	}
 
 	var postings tsdbindex.Postings
-	thirtyDayNumBlocks := 30 * 12
+	sevenDayTwoHourNumBlocks := 7 * 12
 	start := time.Now()
-	for i := 0; i < thirtyDayNumBlocks; i++ {
+	for i := 0; i < sevenDayTwoHourNumBlocks; i++ {
 		postings, err = tsdb.PostingsForMatchers(index, matcher)
 		if err != nil {
 			logger.Fatal("could not get postings", zap.Error(err))
