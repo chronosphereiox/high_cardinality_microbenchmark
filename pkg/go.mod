@@ -1,4 +1,4 @@
-module github.com/chronosphereiox/high_cardinality_microbenchmark
+module github.com/chronosphereiox/high_cardinality_microbenchmark/pkg
 
 go 1.13
 
