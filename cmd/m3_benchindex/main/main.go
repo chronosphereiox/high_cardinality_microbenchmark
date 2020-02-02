@@ -88,10 +88,17 @@ func main() {
 	}
 
 	field := []byte("pod")
-	regexp, err := index.CompileRegex([]byte("^abc.*$"))
+	pattern := []byte("^abc.*$")
+	regexp, err := index.CompileRegex(pattern)
 	if err != nil {
 		logger.Fatal("compile regexp error", zap.Error(err))
 	}
+
+	logger.Info("start matching time series",
+		zap.Int("numSeries", int(segment.Size())),
+		zap.Any("match", map[string]string{
+			string(field): string(pattern),
+		}))
 
 	var postings postings.List
 	sevenDayTwoHourNumBlocks := 7 * 12 // 12 blocks per day

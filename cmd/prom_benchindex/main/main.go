@@ -44,11 +44,18 @@ func main() {
 		logger.Fatal("could not open block index", zap.Error(err))
 	}
 
-	matcher, err := labels.NewMatcher(labels.MatchRegexp,
-		"pod", "^abc.*$")
+	field := "pod"
+	pattern := "^abc.*$"
+	matcher, err := labels.NewMatcher(labels.MatchRegexp, field, pattern)
 	if err != nil {
 		logger.Fatal("could not create matcher", zap.Error(err))
 	}
+
+	logger.Info("start matching time series",
+		zap.Int("numSeries", int(block.Meta().Stats.NumSeries)),
+		zap.Any("match", map[string]string{
+			string(field): string(pattern),
+		}))
 
 	var postings tsdbindex.Postings
 	sevenDayTwoHourNumBlocks := 7 * 12 // 12 blocks per day
