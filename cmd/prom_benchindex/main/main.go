@@ -51,7 +51,7 @@ func main() {
 	}
 
 	var postings tsdbindex.Postings
-	sevenDayTwoHourNumBlocks := 7 * 12
+	sevenDayTwoHourNumBlocks := 7 * 12 // 12 blocks per day
 	start := time.Now()
 	for i := 0; i < sevenDayTwoHourNumBlocks; i++ {
 		postings, err = tsdb.PostingsForMatchers(index, matcher)

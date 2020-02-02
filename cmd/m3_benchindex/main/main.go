@@ -94,7 +94,7 @@ func main() {
 	}
 
 	var postings postings.List
-	sevenDayTwoHourNumBlocks := 7 * 12
+	sevenDayTwoHourNumBlocks := 7 * 12 // 12 blocks per day
 	start := time.Now()
 	for i := 0; i < sevenDayTwoHourNumBlocks; i++ {
 		postings, err = reader.MatchRegexp(field, regexp)
