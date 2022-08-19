@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	_ "net/http/pprof" // pprof: for debug listen server if configured
@@ -14,7 +16,6 @@ import (
 	"github.com/m3db/m3/src/x/instrument"
 	"github.com/prometheus/prometheus/pkg/labels"
 	"github.com/prometheus/prometheus/tsdb"
-	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -54,6 +55,11 @@ func main() {
 	start := time.Now().Truncate(blockSize).Add(-1 * blockSize)
 	timeNowFn := func() time.Time { return start }
 
+	podNameRng := rand.New(rand.NewSource(0)) // deterministic
+	podNameFn := func() string {
+		return fmt.Sprintf("%x-%x", podNameRng.Uint64(), podNameRng.Uint64())
+	}
+
 	gen := generator.NewHostsSimulator(10000, start,
 		generator.HostsSimulatorOptions{TimeNowFn: timeNowFn})
 
@@ -74,7 +80,7 @@ TopLoop:
 				}
 				sampleLabels = append(sampleLabels, labels.Label{
 					Name:  "pod",
-					Value: uuid.NewV4().String(),
+					Value: podNameFn(),
 				})
 
 				if len(series.Samples) != 1 {
