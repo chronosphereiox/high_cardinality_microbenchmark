@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	_ "net/http/pprof" // pprof: for debug listen server if configured
@@ -21,7 +22,6 @@ import (
 	"github.com/m3db/m3/src/query/models"
 	"github.com/m3db/m3/src/x/ident"
 	"github.com/m3db/m3/src/x/instrument"
-	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
 
@@ -54,6 +54,11 @@ func main() {
 
 	start := time.Now().Truncate(blockSize).Add(-1 * blockSize)
 	timeNowFn := func() time.Time { return start }
+
+	podNameRng := rand.New(rand.NewSource(0)) // deterministic
+	podNameFn := func() string {
+		return fmt.Sprintf("%x-%x", podNameRng.Uint64(), podNameRng.Uint64())
+	}
 
 	gen := generator.NewHostsSimulator(10000, start,
 		generator.HostsSimulatorOptions{TimeNowFn: timeNowFn})
@@ -128,7 +133,7 @@ TopLoop:
 				}
 				fields = append(fields, doc.Field{
 					Name:  podTag,
-					Value: []byte(uuid.NewV4().String()),
+					Value: []byte(podNameFn()),
 				})
 
 				tags = tags.Reset()
